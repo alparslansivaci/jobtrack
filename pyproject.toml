@@ -9,7 +9,7 @@ description = "Personal job application tracker with CV-to-listing match scoring
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    { name = "Your Name", email = "you@example.com" },
+    { name = "Alparslan Sivaci", email = "131703672+alparslansivaci@users.noreply.github.com" },
 ]
 license = { text = "MIT" }
 keywords = ["jobs", "tracker", "cli", "tf-idf"]
@@ -28,6 +28,7 @@ dev = [
 
 [project.scripts]
 jobtrack = "jobtrack.cli:main"
+
 
 [tool.setuptools.packages.find]
 include = ["jobtrack*"]

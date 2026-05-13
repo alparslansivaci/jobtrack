@@ -21,3 +21,6 @@ env/
 *.sqlite
 *.sqlite3
 .env
+
+# macOS
+.DS_Store
