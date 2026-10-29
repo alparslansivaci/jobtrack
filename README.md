@@ -90,7 +90,7 @@ pytest --cov=jobtrack   # with coverage
 
 ## Roadmap
 
-Four phases, each one usable on its own. The order is by how much a change improves my daily use per hour spent, not by how interesting it is to build. Phase 1 is small CLI gaps I hit every week; phase 4 is the thing I'd most like to build but need the least.
+Five phases, each one usable on its own. The order is by how much a change improves my daily use per hour spent, not by how interesting it is to build. Phase 1 is small CLI gaps I hit every week; phases 4 and 5 are the things I'd most like to build but need the least right now.
 
 ### Phase 1 — Round out the CLI
 
@@ -125,13 +125,24 @@ The part I'd most enjoy building, deliberately last.
 - [ ] **CV suggestions** — given the missing-keyword report and a semantic matcher, suggest which sections of the CV to adjust for a specific posting. Suggestions only; the tool never edits the CV.
 - [ ] **Multiple CV versions** — store several CVs (`cv add --name backend cv_backend.txt`) and have `match` report which version scores best per posting. Useful for anyone applying across two or three role types.
 
+### Phase 5 — Mobile app
+
+Where I'd like this to end up. Most of my application activity happens away from a terminal: a recruiter emails while I'm on the bus, I hear back from a company between classes. Updating a status should take ten seconds on a phone, not a reminder to do it later.
+
+- [ ] **Phase 3 backend becomes the real API.** The FastAPI layer stops being a read-only view and gains the write endpoints (`add`, `update`, interview notes). The CLI keeps talking to SQLite directly; the app talks to the API. Same `database.py` functions underneath, so there is one source of business logic.
+- [ ] **Sync.** This is the first phase that needs state outside one machine. The plan is a single-user server I host myself, with the SQLite file as the source of truth and the phone as a client. No accounts, no multi-tenant anything.
+- [ ] **The app itself.** Three screens: pipeline list with status filters, an application detail page with notes and interview dates, and a quick-add. Matching stays server-side; the phone just shows the score. Framework undecided; cross-platform (React Native or Flutter) is the likely answer for one person maintaining it.
+- [ ] **Push reminders** — the "no reply for N days" check from phase 2, delivered as a notification instead of a line in `list` output.
+
+The CLI doesn't go away. It stays the fastest way to batch-add applications and run `match`; the app covers the cases where I don't have a laptop open.
+
 ### Non-goals
 
 Things I've decided not to build, so the scope stays legible:
 
 - **Auto-applying to postings.** Out of scope and not something I'd want to automate.
-- **Multi-user or cloud sync.** This is a personal tool; the SQLite file is the whole state. Anyone who wants sync can put `~/.jobtrack/` in a synced folder.
-- **A full web app replacing the CLI.** See the CLI-over-web decision above; phase 3 is a read-mostly view, not a second interface with feature parity.
+- **Multi-user or cloud sync before phase 5.** Until then the SQLite file is the whole state, and anyone who wants sync can put `~/.jobtrack/` in a synced folder. Phase 5 adds sync for exactly one user: me.
+- **A web app replacing the CLI.** See the CLI-over-web decision above. Phase 3 is a read-mostly view; phase 5 is a second client, not a replacement.
 
 ## Requirements
 
