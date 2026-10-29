@@ -1,5 +1,7 @@
 # jobtrack
 
+[![CI](https://github.com/alparslansivaci/jobtrack/actions/workflows/ci.yml/badge.svg)](https://github.com/alparslansivaci/jobtrack/actions/workflows/ci.yml)
+
 A personal CLI for tracking internship applications, with TF-IDF based CV-to-listing match scoring. Built in Python with SQLite, Pydantic, scikit-learn, and rich.
 
 ## Motivation
