@@ -19,6 +19,7 @@ pip install -e ".[dev]"
 
 jobtrack add --company "Anthropic" --role "ML Intern"
 jobtrack list
+jobtrack list --status interview
 jobtrack stats
 jobtrack update 1 --status interview
 jobtrack match --cv path/to/cv.txt
@@ -64,7 +65,7 @@ These are the trade-offs I made deliberately. Each could have gone the other way
 
 ## Testing
 
-80 tests across the five modules:
+83 tests across the five modules:
 
 | Module | Test count | Focus |
 |---|---|---|
@@ -72,7 +73,7 @@ These are the trade-offs I made deliberately. Each could have gone the other way
 | `test_database.py` | 24 | Roundtrip persistence, ordering, edge cases |
 | `test_stats.py` | 26 | Math correctness + facade contract for `summary()` |
 | `test_matcher.py` | 14 | Property-based invariants (identical → 10.0, unrelated → low) |
-| `test_cli.py` | 5 | Exit codes, stdout content, database side effects |
+| `test_cli.py` | 8 | Exit codes, stdout content, database side effects, `--status` filter |
 
 A few principles run through the suite:
 

@@ -12,26 +12,15 @@ script in pyproject.toml.
 """
 import argparse
 import sys
-from jobtrack.database import init_db, add_application
-from jobtrack.models import Application
-from jobtrack.database import init_db, add_application, list_applications
-from jobtrack.models import Application
+from pathlib import Path
+
 from rich.console import Console
 from rich.table import Table
-from jobtrack.database import init_db, add_application, list_applications
-from jobtrack.stats import summary
-from jobtrack.models import Application
-from rich.console import Console
-from rich.table import Table
-from jobtrack.models import Application, Status
-from jobtrack.database import init_db, add_application, list_applications, update_status
+
 from jobtrack.database import init_db, add_application, list_applications, update_status
 from jobtrack.matcher import rank_jobs
 from jobtrack.models import Application, Status
 from jobtrack.stats import summary
-from rich.console import Console
-from rich.table import Table
-from pathlib import Path
 
 def cmd_add(args: argparse.Namespace) -> int:
     """
@@ -89,20 +78,35 @@ def _score_style(score: float) -> str:
 
 def cmd_list(args: argparse.Namespace) -> int:
     """
-    Print all applications as a rich table.
+    Print applications as a rich table, optionally filtered by status.
 
-    Empty database is a real user state (first-time use), not an
-    error — we print a friendly hint instead of an empty table or a
-    crash. Exit code stays 0 because "nothing to show" isn't a failure.
+    The filter lives in the database layer (a WHERE clause), not here —
+    the CLI just converts the argparse string to a Status enum and
+    passes it through. argparse's `choices` already rejected anything
+    that isn't a valid status, so the Status() construction can't raise.
+
+    Empty results are a real user state (first-time use, or no
+    applications in the requested status), not an error — we print a
+    hint instead of an empty table. The hint differs: an empty database
+    should nudge toward `add`, an empty filter should say which status
+    had no matches. Exit code stays 0 either way because "nothing to
+    show" isn't a failure.
     """
     init_db()
-    apps = list_applications()
+    status = Status(args.status) if args.status else None
+    apps = list_applications(status=status)
 
     if not apps:
-        print("No applications yet. Add one with: jobtrack add --company X --role Y")
+        if status is None:
+            print("No applications yet. Add one with: jobtrack add --company X --role Y")
+        else:
+            print(f"No applications with status '{status.value}'.")
         return 0
 
-    table = Table(title=f"Applications ({len(apps)})")
+    title = f"Applications ({len(apps)})"
+    if status is not None:
+        title = f"Applications — {status.value} ({len(apps)})"
+    table = Table(title=title)
     table.add_column("ID", justify="right", style="dim")
     table.add_column("Company")
     table.add_column("Role")
@@ -295,7 +299,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_add.set_defaults(func=cmd_add)
 
     # list
-    p_list = subparsers.add_parser("list", help="List all applications")
+    p_list = subparsers.add_parser("list", help="List applications")
+    p_list.add_argument(
+        "--status",
+        choices=[s.value for s in Status],
+        help="Only show applications with this status",
+    )
     p_list.set_defaults(func=cmd_list)
 
     # stats

@@ -153,3 +153,56 @@ def test_match_missing_cv_returns_exit_code_1(temp_db, capsys, tmp_path):
     captured = capsys.readouterr()
     assert "not found" in captured.out.lower()
     assert str(missing_path) in captured.out  # the user sees which path failed
+
+
+def test_list_status_filter_shows_only_matching(temp_db, capsys):
+    """
+    `list --status X` should show applications in status X and hide
+    the rest. Two applications, one moved to interview, then filter:
+    the interview one appears, the still-applied one does not.
+
+    We assert on company names because that's the user-visible
+    contract; the table layout is rich's business.
+    """
+    main(["add", "--company", "Stripe", "--role", "Backend Engineer"])
+    main(["add", "--company", "Anthropic", "--role", "ML Intern"])
+    main(["update", "2", "--status", "interview"])
+    capsys.readouterr()
+
+    exit_code = main(["list", "--status", "interview"])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "Anthropic" in captured.out
+    assert "Stripe" not in captured.out
+
+
+def test_list_status_filter_with_no_matches_names_the_status(temp_db, capsys):
+    """
+    A filter that matches nothing is not the same as an empty database.
+    The message should name the status the user asked for, and should
+    NOT suggest `jobtrack add` — the user has applications, just none
+    in that state. Exit code stays 0.
+    """
+    main(["add", "--company", "Stripe", "--role", "Backend Engineer"])
+    capsys.readouterr()
+
+    exit_code = main(["list", "--status", "offer"])
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "offer" in captured.out
+    assert "jobtrack add" not in captured.out
+
+
+def test_list_rejects_unknown_status_with_exit_code_2(temp_db, capsys):
+    """
+    An invalid status value is a syntactic error — argparse rejects it
+    via `choices` before cmd_list ever runs. argparse exits with code 2,
+    which surfaces as SystemExit in-process. Pinning this keeps the
+    exit-code layering honest: 2 for "you typed it wrong".
+    """
+    with pytest.raises(SystemExit) as exc_info:
+        main(["list", "--status", "hired"])
+
+    assert exc_info.value.code == 2
