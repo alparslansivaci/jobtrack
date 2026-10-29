@@ -88,14 +88,50 @@ pytest -v
 pytest --cov=jobtrack   # with coverage
 ```
 
-## What I'd do next
+## Roadmap
 
-In rough order of impact:
+Four phases, each one usable on its own. The order is by how much a change improves my daily use per hour spent, not by how interesting it is to build. Phase 1 is small CLI gaps I hit every week; phase 4 is the thing I'd most like to build but need the least.
 
-1. **Filter and pagination flags for `list`** — `--status interview`, `--limit 20`. The database layer already supports the first; the CLI just needs to expose it. Five-minute change.
-2. **N-gram matching** in `matcher.py`. `ngram_range=(1, 2)` would let "REST APIs" tokenize as a single feature instead of two — a free precision bump.
-3. **`jobtrack init` command** to print the database location and reset it. Currently the path is documented but not introspectable.
-4. **Sentence-transformer embeddings** as an optional matcher backend. Real semantic similarity, at the cost of determinism and a heavy dependency. Worth it only if a user reports keyword-mismatch problems often.
+### Phase 1 — Round out the CLI
+
+Small changes, mostly exposing what the lower layers already support.
+
+- [x] **`list --status`** — filter by status. Shipped; the database layer had the WHERE clause, the CLI just needed the flag.
+- [ ] **`list --limit N`** — pagination. Once the table passes ~40 rows the terminal scroll makes `list` useless without it.
+- [ ] **`jobtrack init`** — print the database path and offer `--reset`. The path is documented but not introspectable from the tool itself.
+- [ ] **CSV export** (`jobtrack export --csv out.csv`) — the escape hatch for anyone who wants their data back in a spreadsheet. Cheap to add, removes the "what if I want to leave" worry.
+- [ ] **N-gram matching** — `ngram_range=(1, 2)` in `matcher.py`, so "REST APIs" becomes one feature instead of two. A precision bump with no new dependencies; the property tests should pass unchanged.
+- [ ] **Missing-keyword report** — `match` already computes `missing_keywords` per job; this would aggregate them across all open applications into one list of the terms that appear in postings but not in my CV. That's the actionable output I actually want from the matcher.
+
+### Phase 2 — Less typing, more memory
+
+Reduce the manual data entry that makes any tracker fall behind.
+
+- [ ] **Import from a posting URL** — `jobtrack add --url <posting>` to pull company, role, and description. Site-specific scraping is brittle, so start with a generic readability-style extraction and accept that some sites need manual fixup.
+- [ ] **PDF CV input** — `match --cv cv.pdf` via `pypdf`. Most people keep their CV as a PDF; asking for a `.txt` copy is friction.
+- [ ] **Interview dates and notes** — `update <id> --interview-at 2026-11-04 --note "panel, 3 people"`. New columns on `applications`, so this needs a lightweight schema migration step in `init_db()`.
+- [ ] **"No reply for N days" warning** — `Application.days_in_current_status()` already exists; a `--stale 14` flag on `list` would highlight applications that have sat in `applied` past the threshold. This is the nudge to follow up or mark as ghosted.
+
+### Phase 3 — Web view
+
+- [ ] **FastAPI backend** over the same `database.py` functions. The free-function design pays off here: no ORM session to thread through, just call the functions with a `db_path`.
+- [ ] **Minimal web panel** — a single-page table with status filters, read-mostly. Not a replacement for the CLI, which stays the primary interface; this is for glancing at the pipeline from a phone.
+
+### Phase 4 — Semantic matching
+
+The part I'd most enjoy building, deliberately last.
+
+- [ ] **Embedding-based matcher backend** — sentence-transformers behind the same `MatchResult` interface, selected with `match --backend embed`. TF-IDF stays the default: it's deterministic, offline, and fast. Embeddings would be opt-in for people who hit the "ML engineer" vs "machine learning engineer" wall.
+- [ ] **CV suggestions** — given the missing-keyword report and a semantic matcher, suggest which sections of the CV to adjust for a specific posting. Suggestions only; the tool never edits the CV.
+- [ ] **Multiple CV versions** — store several CVs (`cv add --name backend cv_backend.txt`) and have `match` report which version scores best per posting. Useful for anyone applying across two or three role types.
+
+### Non-goals
+
+Things I've decided not to build, so the scope stays legible:
+
+- **Auto-applying to postings.** Out of scope and not something I'd want to automate.
+- **Multi-user or cloud sync.** This is a personal tool; the SQLite file is the whole state. Anyone who wants sync can put `~/.jobtrack/` in a synced folder.
+- **A full web app replacing the CLI.** See the CLI-over-web decision above; phase 3 is a read-mostly view, not a second interface with feature parity.
 
 ## Requirements
 
